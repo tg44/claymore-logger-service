@@ -27,8 +27,7 @@ object ClaymoreClient {
     ParsedStatisticResponse(
       minerVersion = data(0),
       runTimeInMins = Try(data(1).toDouble).getOrElse(0.0),
-      eth = eth,
-      dcr = dcr,
+      currencyInformations = Seq(eth, dcr),
       tempsPerCard = tempSeq,
       fansPerCard = fanSeq,
       cards = collectCardsData(tempSeq, fanSeq, eth, dcr)
@@ -40,6 +39,7 @@ object ClaymoreClient {
     val poolInfos = data(8).split(";").map(str => Try(str.toInt).getOrElse(0)).toList
 
     CurrencyInformation(
+      currency = "eth",
       sumHR = detaildRates(0),
       shares = Try(detaildRates(1).toInt).getOrElse(0),
       sharesRejected = Try(detaildRates(2).toInt).getOrElse(0),
@@ -55,6 +55,7 @@ object ClaymoreClient {
     val poolInfos = data(8).split(";").map(str => Try(str.toInt).getOrElse(0)).toList
 
     CurrencyInformation(
+      currency = "dcr",
       sumHR = detaildRates(0),
       shares = detaildRates(1).toInt,
       sharesRejected = Try(detaildRates(2).toInt).getOrElse(0),
