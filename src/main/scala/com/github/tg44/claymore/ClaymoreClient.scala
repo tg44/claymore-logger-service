@@ -2,8 +2,7 @@ package com.github.tg44.claymore
 
 import java.net.InetSocketAddress
 
-import akka.actor.{Actor, ActorRef, Props}
-import akka.io.Tcp.Write
+import akka.actor.{Actor, Props}
 import akka.util.ByteString
 import com.github.tg44.claymore.TcpClient._
 
@@ -69,7 +68,7 @@ object ClaymoreClient {
   def collectCardsData(tempSeq: Seq[Double], fanSeq: Seq[Double], ethData: CurrencyInformation, dcrData: CurrencyInformation): Seq[CardStatistic] = {
 
     tempSeq zip fanSeq zip ethData.perCardHR zip dcrData.perCardHR map {
-      case (((a, b), c), d) => CardStatistic(c, d, a, b)
+      case (((a, b), c), d) => CardStatistic(Map("eth" -> c, "dcr" -> d), a, b)
     }
   }
 

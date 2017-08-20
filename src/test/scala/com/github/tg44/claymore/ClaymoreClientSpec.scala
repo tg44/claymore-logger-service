@@ -42,7 +42,7 @@ class ClaymoreClientSpec extends WordSpecLike with Matchers with JsonSupport {
     "parse cards correctly" in {
       val result = ClaymoreClient.parseStatResponse(exampleDto)
       result.cards.size shouldBe 6
-      result.cards.head shouldBe CardStatistic(30502, 0, 53, 71)
+      result.cards.head shouldBe CardStatistic(Map("eth" -> 30502, "dcr" -> 0), 53, 71)
     }
   }
 }

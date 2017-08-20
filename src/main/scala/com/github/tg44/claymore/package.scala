@@ -27,8 +27,7 @@ package object claymore {
   )
 
   case class CardStatistic(
-      ethHR: Double,
-      dcrHR: Double,
+      hashRate: Map[String, Double],
       temp: Double,
       fan: Double
   )
