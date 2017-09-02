@@ -79,17 +79,23 @@ class ClaymoreClient extends Actor with JsonSupport {
 
   override def receive: Receive = {
     case PollReq(name, address, port) =>
+      println(s"started polling $name")
       context.actorOf(TcpClient.props(new InetSocketAddress(address, port), self, name))
     case ConnectionOpened(inetAddr) =>
+      println(s"connection opened to $inetAddr")
       sender ! ByteString(ClaymoreRequestDto(id = 0, method = "miner_getstat1").toJson.compactPrint)
     case Received(data, inetAddr, name) =>
       val dto = data.utf8String.parseJson.convertTo[ClaymoreStatisticResponseDto]
       val model = ClaymoreClient.parseStatResponse(dto)
+      println(s"data came back from $name")
       ServerService.postData(StatisticDataDto(name, inetAddr.getHostName, inetAddr.getPort, model), self)
       sender ! Close
     //TODO: logs
-    case ConnectionClosed(_) =>
-    case WriteFailed(_) =>
-    case ConnectionFailed(_) =>
+    case ConnectionClosed(inetAddr) =>
+      println(s"connection closed $inetAddr")
+    case WriteFailed(inetAddr) =>
+      println(s"write failed $inetAddr")
+    case ConnectionFailed(inetAddr) =>
+      println(s"connection failed $inetAddr")
   }
 }

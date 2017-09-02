@@ -8,7 +8,12 @@ object Main extends App {
 
   Config.SERVER
   Config.RIGS
+
+  println(s"Starting with these rigs: ${Config.RIGS}")
+
+  println(s"Auth started")
   ServerService.jwt
+  println(s"Auth ended")
 
   val client = system.actorOf(ClaymoreClient.props)
 

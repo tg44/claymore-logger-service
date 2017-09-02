@@ -13,14 +13,14 @@ import spray.json._
 import concurrent.duration._
 import scala.concurrent.Await
 import collection.immutable.Seq
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 object ServerService extends JsonSupport {
 
   import AkkaImplicits._
 
   lazy val jwt: String = if (Config.SERVER.needAuth) getJwt else ""
-  lazy val authHeader: Seq[HttpHeader] = if (Config.SERVER.needAuth) Seq(RawHeader("Authentication", s"Bearer $jwt")) else Nil
+  lazy val authHeader: Seq[HttpHeader] = if (Config.SERVER.needAuth) Seq(RawHeader("Authorization", s"Bearer $jwt")) else Nil
 
   val jwtUrl: String = Config.SERVER.url + Config.SERVER.jwtEndpoint
   val dataUrl: String = Config.SERVER.url + Config.SERVER.dataEndpoint
@@ -36,8 +36,11 @@ object ServerService extends JsonSupport {
     val delay = result.flatMap(x => x._3.dataBytes.map(_.utf8String).runWith(Sink.seq).map(_.mkString("").toInt))
     delay.onComplete {
       case Success(d) =>
-        system.scheduler.scheduleOnce(d.millis, ref, PollReq(statData.name, statData.remoteAddress, statData.remotePort))
-      case _ =>
+        println("data sended")
+        system.scheduler.scheduleOnce(d.seconds, ref, PollReq(statData.name, statData.remoteAddress, statData.remotePort))
+      case Failure(e) =>
+        e.printStackTrace()
+
     }
   }
 
