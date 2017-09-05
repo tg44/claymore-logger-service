@@ -2,7 +2,7 @@ package com.github.tg44.claymore
 
 import java.net.InetSocketAddress
 
-import akka.actor.ActorRef
+import akka.actor.{ActorRef, Cancellable}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
@@ -25,6 +25,36 @@ object ServerService extends JsonSupport {
   val jwtUrl: String = Config.SERVER.url + Config.SERVER.jwtEndpoint
   val dataUrl: String = Config.SERVER.url + Config.SERVER.dataEndpoint
 
+  var schedulerMap = Map.empty[ActorRef,Seq[(String,Long,Cancellable)]]
+
+  //todo would be nicer if its immutable and tested
+  private def adjustSchedule(ref: ActorRef, d: Long, statData: StatisticDataDto) = {
+    if(schedulerMap.get(ref).isDefined) {
+      val element = schedulerMap(ref).find(_._1 == statData.name)
+      if (element.isDefined) {
+        if (element.get._2 == d) {
+          //ok do nothing
+        } else {
+          element.get._3.cancel()
+          val list = schedulerMap(ref).filterNot(_._1 == statData.name)
+          schedulerMap = schedulerMap + (ref -> list)
+          scheduleActor(ref, d, statData)
+        }
+      } else {
+        scheduleActor(ref, d, statData)
+      }
+    } else {
+      scheduleActor(ref, d, statData)
+    }
+  }
+
+  private def scheduleActor(ref: ActorRef, d: Long, statData: StatisticDataDto) = {
+    val cancellable = system.scheduler.schedule(d.seconds, d.seconds, ref, PollReq(statData.name, statData.remoteAddress, statData.remotePort))
+    val tuple = (statData.name, d, cancellable)
+    val list =  schedulerMap.getOrElse(ref, Seq.empty) :+ tuple
+    schedulerMap = schedulerMap + (ref -> list)
+  }
+
   def postData(statData: StatisticDataDto, ref: ActorRef): Unit = {
     val result = Http().singleRequest(
       HttpRequest(method = HttpMethods.POST,
@@ -36,8 +66,8 @@ object ServerService extends JsonSupport {
     val delay = result.flatMap(x => x._3.dataBytes.map(_.utf8String).runWith(Sink.seq).map(_.mkString("").toInt))
     delay.onComplete {
       case Success(d) =>
-        println("data sended")
-        system.scheduler.scheduleOnce(d.seconds, ref, PollReq(statData.name, statData.remoteAddress, statData.remotePort))
+        println(s"data sended, delay is $d seconds")
+        adjustSchedule(ref,d,statData)
       case Failure(e) =>
         e.printStackTrace()
 
